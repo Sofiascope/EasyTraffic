@@ -131,33 +131,34 @@ def okay(flatten, xImg, yImg, listCars, car, distSecur, lane):
     findC=0
     for c in listCarToCheck:
         if c.get_lane()==lane: #Check only car in same lane
-            posX= flatten.index([xImg, yImg])
-            # Check if there is a car in the interval between
-            # the current position and the security distance
+            if([xImg, yImg] in flatten):
+                posX= flatten.index([xImg, yImg])
+                # Check if there is a car in the interval between
+                # the current position and the security distance
 
-            # Be careful because car are looping
-            if(posX+distSecur>len(flatten)-1):
-                toCheckP1 = posX+distSecur-len(flatten)+1
-                toCheckP2 = distSecur-toCheckP1
-                positionToCheck1=\
-                    [i for i in range(0,toCheckP1)]
-                positiontoCheck2=\
-                [i for i in range(len(flatten)-toCheckP2, len(flatten))]
-                positionToCheck=positiontoCheck2+positionToCheck1
+                # Be careful because car are looping
+                if(posX+distSecur>len(flatten)-1):
+                    toCheckP1 = posX+distSecur-len(flatten)+1
+                    toCheckP2 = distSecur-toCheckP1
+                    positionToCheck1=\
+                        [i for i in range(0,toCheckP1)]
+                    positiontoCheck2=\
+                    [i for i in range(len(flatten)-toCheckP2, len(flatten))]
+                    positionToCheck=positiontoCheck2+positionToCheck1
 
-            else:
-                toCheck=posX+distSecur
-                positionToCheck=[i for i in range(toCheck-distSecur,toCheck)]
+                else:
+                    toCheck=posX+distSecur
+                    positionToCheck=[i for i in range(toCheck-distSecur,toCheck)]
 
-            find=False
-            # We modify the boolean value
-            for t in positionToCheck:
-                verifX=abs(flatten[t][0]-c.get_imgx())
-                verifY=abs(flatten[t][1]-c.get_imgy())
+                find=False
+                # We modify the boolean value
+                for t in positionToCheck:
+                    verifX=abs(flatten[t][0]-c.get_imgx())
+                    verifY=abs(flatten[t][1]-c.get_imgy())
 
-                if(verifX<1 and verifY<1 and find==False):
-                    toReturn=False
-                    findC=c
+                    if(verifX<1 and verifY<1 and find==False):
+                        toReturn=False
+                        findC=c
     return toReturn, findC
 
 def checkPassing(listCars, passingPoints, listLanes, l, wEnd, k,toTransfer):
@@ -345,11 +346,13 @@ def prepareMap(numberVertices, DISPSURF, distSecur):
     car4=Car(30,0,0,carImg4,DISPSURF)
     carImg5 = pygame.image.load('spacestation.png').convert_alpha()
     car5=Car(20,0,1,carImg2,DISPSURF)
+    carImg6 = pygame.image.load('spacestation.png').convert_alpha()
+    car6=Car(10,0,1,carImg2,DISPSURF)
 
     clock = pygame.time.Clock()
 
-    listCars = CarPool([car1, car2, car3, car4],\
-                        [50, 400, 400, 50])
+    listCars = CarPool([car1, car2, car3, car4, car5, car6],\
+                        [50, 400, 400, 50, 150, 110])
     listLanes=[]
     # Load lanes
     lane0 = Lane(0, 350, numberVertices)

@@ -31,8 +31,8 @@ crashed = False
 DISPSURF = pygame.display.set_mode((display_width, display_height), 0, 32)
 pygame.display.set_caption("Easy Traffic")
 
-numberVertices=100
-distSecur=50
+numberVertices=150
+distSecur=40
 listCars, listLanes, listStart, listStartEnd, flatten, \
             listPassingLine, listPassingLine2, listPassingLine3, \
             listPassingLine4, whereEnd = \
