@@ -1,5 +1,5 @@
 # EasyTraffic
-EasyTraffic is a python script to display a modelisation of traffic, and can be used as a basis to apply machine learning algorithm
+EasyTraffic is a python script to display a modelisation of traffic, and can be used as a basis to apply machine learning algorithms.
 
 ## Getting Started
 
