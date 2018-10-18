@@ -13,6 +13,7 @@ updated
 import numpy as np
 import time
 import operator
+import random
 
 import pygame
 from Car import Car, CarPool
@@ -129,6 +130,7 @@ def okay(flatten, xImg, yImg, listCars, car, distSecur, lane):
     # Boolean value toReturn
     toReturn=True
     findC=0
+    accident=False
     for c in listCarToCheck:
         if c.get_lane()==lane: #Check only car in same lane
             if([xImg, yImg] in flatten):
@@ -157,9 +159,11 @@ def okay(flatten, xImg, yImg, listCars, car, distSecur, lane):
                     verifY=abs(flatten[t][1]-c.get_imgy())
 
                     if(verifX<1 and verifY<1 and find==False):
+                        if(abs(t-posX)<int(distSecur*0.9)):
+                            accident=True
                         toReturn=False
                         findC=c
-    return toReturn, findC
+    return toReturn, findC, accident
 
 def checkPassing(listCars, passingPoints, listLanes, l, wEnd, k,toTransfer):
     """ Start the passing phase when needed
@@ -258,6 +262,109 @@ def goBack(listCars, passingPoints, listLanes, l, wEnd, k,toTransfer):
 
     return listCars, listLanes, testReturn
 
+def toBlit(listCars):
+    listToBlit=[]
+    myfont = pygame.font.SysFont("monospace", 15)
+
+    # POINTS
+    values = rankingCarPoint(listCars)
+    sortDict = sorted(values.items(), key=lambda x: x[1])
+    sortDict=sortDict[::-1]
+
+    label = myfont.render("HIGH SCORE", 30, (0,0,0))
+    listToBlit.append((label, (1100, 80)))
+
+    x=0
+    for i in range(len(sortDict)):
+        text="CAR "+str(sortDict[i][0])+ "         : "+str(sortDict[i][1])
+        label = myfont.render(text, 30, (0,0,0))
+        listToBlit.append((label, (1050, 160+x)))
+        x+=20
+
+    return listToBlit
+
+def decideChangeLane(c):
+    """ Decide whether or not a car should change line
+        c : car"""
+    nbPassing = c.get_countPassing()
+    p=0.5
+    if(nbPassing>0):
+        if(random.random()>p/nbPassing):
+            c.setwPassingStart(True)
+            c.set_changingLane(1)
+    else:
+        if(random.random()<p):
+            c.set_goBack(True)
+            c.setwPassingStart(True)
+            c.set_changingLane(2)
+
+
+    c.resetCountPassing()
+    return c
+
+def rankingCar(df):
+    values={}
+    for i in df.CarId.unique():
+        lastLeap = np.max(df[df.CarId==i].Leap)
+        values[i]=df[(df.CarId==i) &(df.Leap==lastLeap)].AverageSpeed.values[0]
+    return values
+
+def carAccidents(df):
+    values={}
+    for i in df.CarId.unique():
+        lastLeap = np.max(df[df.CarId==i].Leap)
+        values[i]=df[(df.CarId==i) &(df.Leap==lastLeap)].Accidents.values[0]
+    return values
+
+def rankingCarPoint(listCars):
+    values={}
+    for i in range(len(listCars.get_listCars())) :
+        values[i] = listCars.get_listCars()[i].numberPoints
+    return values
+
+def checkSpeedPoint(listCars, df):
+    values = rankingCar(df)
+    for key in values:
+        speed = values[key]
+        if(speed>50):
+            print("Car ",int(key), " has been punished !")
+            listCars.get_listCars()[int(key)].numberPoints-=350
+        else:
+            listCars.get_listCars()[int(key)].numberPoints+=50
+    return listCars
+
+def checkAccidentPoint(listCars, df):
+    values = carAccidents(df)
+    for key in values:
+        speed = values[key]
+        confidencePassing = listCars.get_listCars()[int(key)].get_confidencePassing()
+        if(speed>0):
+            print("Car ",int(key), " has been punished !")
+            listCars.get_listCars()[int(key)].numberPoints-=450
+            newValue=min(confidencePassing*0.7, 0.2)
+            listCars.get_listCars()[int(key)].set_confidencePassing(newValue)
+        else:
+            newValue=max(confidencePassing*1.1, 1)
+            listCars.get_listCars()[int(key)].set_confidencePassing(newValue)
+    return listCars
+
+def rewardPoint(listCars):
+    values = rankingCarPoint(listCars)
+    sortDict = sorted(values.items(), key=lambda x: x[1])
+    rankCar = [sortDict[i][0] for i in range(len(sortDict))]
+    print("Car ",int(rankCar[0])," is the fastest !")
+    listCars.wantedSpeed[int(rankCar[0])]+=75
+    return listCars
+
+def rewardSpeed(listCars, df):
+    values = rankingCar(df)
+    sortDict = sorted(values.items(), key=lambda x: x[1])
+    rankCar = [sortDict[i][0] for i in range(len(sortDict))]
+
+    listCars.wantedSpeed[int(rankCar[0])]+=75
+
+    return listCars
+
 
 def updatePosition(l, listStart, listCars, listLanes, distSecur, flatten, \
                     listPassingLine, wEnd):
@@ -274,11 +381,13 @@ def updatePosition(l, listStart, listCars, listLanes, distSecur, flatten, \
     if(time.time()-listStart[l]>(1/(listCars.get_listSpeed()[l]))):
         listCars.get_listCars()[l].update_pos()
         # Test to check if there is a car in front of the current car
-        toReturn, findC =okay(flatten[listCars.get_listCars()[l].get_lane()], \
+        toReturn, findC, accident =okay(flatten[listCars.get_listCars()[l].get_lane()], \
                 listCars.get_listCars()[l].get_imgx(), \
                 listCars.get_listCars()[l].get_imgy(), \
                 listCars.get_listCars(), l, distSecur, \
                 listCars.get_listCars()[l].get_lane())
+        if(accident):
+            listCars.get_listCars()[l].update_accident()
         if(toReturn):
             listCars.get_listCars()[l].y=listCars.get_listCars()[l].y+1
             if(listCars.get_listCars()[l].y>=\
@@ -291,7 +400,9 @@ def updatePosition(l, listStart, listCars, listLanes, distSecur, flatten, \
             m = listCars.get_listCars().index(findC)
             changeSpeed=listCars.get_listSpeed()[m]
             listCars.get_listSpeed()[l]=changeSpeed
-            listCars.get_listCars()[l].setwPassingStart(True)
+            confidencePassing=listCars.get_listCars()[l].get_confidencePassing()
+            if(random.random()<confidencePassing):
+                listCars.get_listCars()[l].setwPassingStart(True)
 
         # Check if the car is in a Going Back phase
         if(listCars.get_listCars()[l].get_goBack()==False):
@@ -309,22 +420,36 @@ def updatePosition(l, listStart, listCars, listLanes, distSecur, flatten, \
 
         #Otherwise, we can check if there is a need for passing
         else:
-            toTransfer = listCars.get_listCars()[l].get_lane()
-            if(toTransfer in [6,2]):
-                toTransfer=3
-            if(toTransfer in [5,1]):
-                toTransfer=2
-            for k in range(len(listPassingLine[toTransfer])):
-                    passingPoints = (listPassingLine[toTransfer][k].get_start(),\
-                                    listPassingLine[toTransfer][k].get_end())
+            if(listCars.get_listCars()[l].get_changingLane()%2==0):
+                toTransfer = listCars.get_listCars()[l].get_lane()
+                if(toTransfer in [6,2]):
+                    toTransfer=3
+                if(toTransfer in [5,1]):
+                    toTransfer=2
+                for k in range(len(listPassingLine[toTransfer])):
+                        passingPoints = (listPassingLine[toTransfer][k].get_start(),\
+                                        listPassingLine[toTransfer][k].get_end())
 
-                    listCars, listLanes, toReturn = goBack(listCars, passingPoints, \
-                                        listLanes, l, wEnd[k], k, toTransfer)
-                    if(toReturn):
-                        listCars.get_listCars()[l].set_goBack(False)
-                        listCars.get_listCars()[l].setwPassingStart(False)
-                        listCars.get_listCars()[l].set_isPassing(False)
-                        listCars.get_listCars()[l].set_timeUp()
+                        listCars, listLanes, toReturn = goBack(listCars, passingPoints, \
+                                            listLanes, l, wEnd[k], k, toTransfer)
+                        if(toReturn):
+                            if(listCars.get_listCars()[l].get_changingLane()==2):
+                                listCars.get_listCars()[l].set_changingLane(0)
+                            else:
+                                listCars.get_listCars()[l].updateCountPassing()
+                            listCars.get_listCars()[l].set_goBack(False)
+                            listCars.get_listCars()[l].setwPassingStart(False)
+                            listCars.get_listCars()[l].set_isPassing(False)
+                            listCars.get_listCars()[l].set_timeUp()
+
+
+            else:
+                listCars.get_listCars()[l].set_changingLane(0)
+                listCars.get_listCars()[l].set_goBack(False)
+                listCars.get_listCars()[l].setwPassingStart(False)
+                listCars.get_listCars()[l].set_isPassing(False)
+                listCars.get_listCars()[l].set_timeUp()
+
 
         listStart[l]=time.time()
     return listStart, listCars, listLanes, flatten
@@ -339,7 +464,7 @@ def prepareMap(numberVertices, DISPSURF, distSecur):
     carImg1 = pygame.image.load('spacestation.png').convert_alpha()
     car1=Car(20,0,1,carImg1,DISPSURF)
     carImg2 = pygame.image.load('spacestation.png').convert_alpha()
-    car2=Car(0,0,1,carImg2,DISPSURF)
+    car2=Car(0,0,0,carImg2,DISPSURF)
     carImg3 = pygame.image.load('spacestation.png').convert_alpha()
     car3=Car(9,0,0,carImg3,DISPSURF)
     carImg4 = pygame.image.load('spacestation.png').convert_alpha()
@@ -348,11 +473,15 @@ def prepareMap(numberVertices, DISPSURF, distSecur):
     car5=Car(20,0,1,carImg2,DISPSURF)
     carImg6 = pygame.image.load('spacestation.png').convert_alpha()
     car6=Car(10,0,1,carImg2,DISPSURF)
+    carImg7 = pygame.image.load('spacestation.png').convert_alpha()
+    car7=Car(23,0,1,carImg2,DISPSURF)
+    carImg8 = pygame.image.load('spacestation.png').convert_alpha()
+    car8=Car(13,0,1,carImg2,DISPSURF)
 
     clock = pygame.time.Clock()
 
-    listCars = CarPool([car1, car2, car3, car4, car5, car6],\
-                        [50, 400, 400, 50, 150, 110])
+    listCars = CarPool([car1, car2, car3, car4, car5, car6, car7, car8],\
+                        [200, 100, 150, 50, 300, 280, 140, 160])
     listLanes=[]
     # Load lanes
     lane0 = Lane(0, 350, numberVertices)

@@ -15,8 +15,11 @@ class Lane:
         radius, numberVertices : geomtric parameters of the lane"""
 
     def __init__(self, nb, radius, numberVertices):
+        self.radius=radius
         self.lines, self.positions = utils.mapStruct(radius, numberVertices)
         self.nb=nb
+    def get_radius(self):
+        return self.radius
     def path(self):
         self.pathX, self.pathY = utils.path(self.lines)
     def get_path_tuple(self):

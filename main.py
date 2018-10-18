@@ -13,11 +13,12 @@ from pygame.locals import QUIT
 import numpy as np
 import time
 import utils
+import random
 
 pygame.init()
 
 
-display_width = 1000
+display_width = 1500
 display_height = 800
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -39,18 +40,38 @@ listCars, listLanes, listStart, listStartEnd, flatten, \
                 utils.prepareMap(numberVertices, DISPSURF, distSecur)
 
 print(len(listPassingLine))
+changeSpeedTime=time.time()
+radar=time.time()
+
+listToBlit=utils.toBlit(listCars)
 while not crashed:
+
+
 
     for c in listCars.get_listCars():
         for l in [0,1,2]:
             if(c.x==len(listLanes.get_path_lane(l)[0])):
+                    listCars.updateDfStats(c, listLanes)
+                    c=utils.decideChangeLane(c)
                     c.x=0
                     c.j=0
+
+    if(time.time()-changeSpeedTime>20):
+        df = listCars.get_Stats()
+        listCars=utils.rewardSpeed(listCars, df)
+        changeSpeedTime=time.time()
+    if(time.time()-radar>30+np.random.randint(10)):
+        listCars=utils.checkSpeedPoint(listCars, df)
+        listCars=utils.rewardPoint(listCars)
+        listCars=utils.checkAccidentPoint(listCars, df)
+        listToBlit=utils.toBlit(listCars)
+        radar=time.time()
 
     for event in pygame.event.get():
 
         if event.type == pygame.QUIT:
             crashed = True
+            #listCars.record_Start()
         elif event.type == pygame.MOUSEBUTTONDOWN:
             x0, x1 = pygame.mouse.get_pos()
             whichLane, corner = utils.closest(listLanes.get_listLanes(),\
@@ -74,6 +95,11 @@ while not crashed:
                                         whereEnd)
 
     DISPSURF.fill(WHITE)
+    for v in listToBlit:
+        DISPSURF.blit(v[0], v[1])
+
+
+
 
     pygame.draw.polygon(DISPSURF, RED, listLanes.get_lane(0)\
                                             .get_positions(), 2)
