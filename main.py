@@ -32,7 +32,7 @@ crashed = False
 DISPSURF = pygame.display.set_mode((display_width, display_height), 0, 32)
 pygame.display.set_caption("Easy Traffic")
 
-numberVertices=150
+numberVertices=500
 distSecur=40
 listCars, listLanes, listStart, listStartEnd, flatten, \
             listPassingLine, listPassingLine2, listPassingLine3, \
@@ -71,7 +71,7 @@ while not crashed:
 
         if event.type == pygame.QUIT:
             crashed = True
-            #listCars.record_Start()
+            listCars.record_Start()
         elif event.type == pygame.MOUSEBUTTONDOWN:
             x0, x1 = pygame.mouse.get_pos()
             whichLane, corner = utils.closest(listLanes.get_listLanes(),\
@@ -101,15 +101,15 @@ while not crashed:
 
 
 
-    pygame.draw.polygon(DISPSURF, RED, listLanes.get_lane(0)\
-                                            .get_positions(), 2)
-    pygame.draw.polygon(DISPSURF, RED, listLanes.get_lane(1)\
-                                            .get_positions(), 2)
-    pygame.draw.polygon(DISPSURF, RED, listLanes.get_lane(2)\
-                                            .get_positions(), 2)
+    #pygame.draw.polygon(DISPSURF, RED, listLanes.get_lane(0)\
+                                            #.get_positions(), 2)
+    #pygame.draw.polygon(DISPSURF, RED, listLanes.get_lane(1)\
+                                            #.get_positions(), 2)
+    #pygame.draw.polygon(DISPSURF, RED, listLanes.get_lane(2)\
+                                            #.get_positions(), 2)
 
-    for c in listCars.get_listCars():
-        c.carPrint()
+    #for c in listCars.get_listCars():
+        #c.carPrint()
 
     pygame.display.update()
 

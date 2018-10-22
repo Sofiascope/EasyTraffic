@@ -145,19 +145,20 @@ class CarPool():
 
         points=c.numberPoints
         accidents=c.get_accident()
+        confidence = c.get_confidencePassing()
         if(lp==0):
-            testArray=pd.DataFrame(np.array([i, c.get_countPassing(), 0, 0, points,0])).T
+            testArray=pd.DataFrame(np.array([i, c.get_countPassing(), 0, 0, points,0,confidence])).T
         else:
             t = time.time()-c.get_leapStart()
             lane=listLanes.get_lane(c.get_lane()).get_radius()
 
             v=2*np.pi*lane*t/1000
-            testArray=pd.DataFrame(np.array([i, c.get_countPassing(), lp, round(v,2), points,accidents])).T
+            testArray=pd.DataFrame(np.array([i, c.get_countPassing(), lp, round(v,2), points,accidents,confidence])).T
         if(len(self.df_stats)==0):
             self.df_stats=testArray
-            self.df_stats.columns=["CarId","NumberPassing","Leap","AverageSpeed","NumberPoints","Accidents"]
+            self.df_stats.columns=["CarId","NumberPassing","Leap","AverageSpeed","NumberPoints","Accidents","Confidence"]
         else:
-            testArray.columns=["CarId","NumberPassing","Leap","AverageSpeed","NumberPoints","Accidents"]
+            testArray.columns=["CarId","NumberPassing","Leap","AverageSpeed","NumberPoints","Accidents","Confidence"]
             self.df_stats=pd.concat([self.df_stats, testArray])
 
         c.reset_accident()

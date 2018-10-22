@@ -1,0 +1,10 @@
+# REVIEW
+
+The system has a Global Allocation limit of 5529.6 GB 
+
+Important issues in the memory consumption have been detected, with an increase of  **38.62 %** (2135.53 GB ) of the Global Allocation Limit
+
+According to our forecast, the memory consumption will be reached on **the 20th of November 2018**
+
+The system may suffer from Delta Merges Issues, with only **17.37 %** (960.49 GB )left for possible merges 
+

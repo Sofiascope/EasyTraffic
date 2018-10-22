@@ -326,7 +326,7 @@ def checkSpeedPoint(listCars, df):
     values = rankingCar(df)
     for key in values:
         speed = values[key]
-        if(speed>50):
+        if(speed>281.25):
             print("Car ",int(key), " has been punished !")
             listCars.get_listCars()[int(key)].numberPoints-=350
         else:
@@ -340,11 +340,15 @@ def checkAccidentPoint(listCars, df):
         confidencePassing = listCars.get_listCars()[int(key)].get_confidencePassing()
         if(speed>0):
             print("Car ",int(key), " has been punished !")
-            listCars.get_listCars()[int(key)].numberPoints-=450
-            newValue=min(confidencePassing*0.7, 0.2)
+            sigma=0.9
+            mu=np.log(250)
+            penalty=int(np.random.lognormal(mu, sigma)/3)
+            listCars.get_listCars()[int(key)].numberPoints-=penalty
+            newConfidence=1-np.random.lognormal(mu, sigma)/1000
+            newValue=max(confidencePassing*newConfidence, 0.2)
             listCars.get_listCars()[int(key)].set_confidencePassing(newValue)
         else:
-            newValue=max(confidencePassing*1.1, 1)
+            newValue=min(confidencePassing*1.1, 1)
             listCars.get_listCars()[int(key)].set_confidencePassing(newValue)
     return listCars
 
@@ -354,6 +358,13 @@ def rewardPoint(listCars):
     rankCar = [sortDict[i][0] for i in range(len(sortDict))]
     print("Car ",int(rankCar[0])," is the fastest !")
     listCars.wantedSpeed[int(rankCar[0])]+=75
+    for i in range(len(sortDict)):
+        if(sortDict[i][1]<0):
+            curr=listCars.wantedSpeed[int(rankCar[i])]
+            newValue=curr-80
+            if(newValue<0):
+                newValue=curr
+            listCars.wantedSpeed[int(rankCar[i])]=newValue
     return listCars
 
 def rewardSpeed(listCars, df):
@@ -454,6 +465,27 @@ def updatePosition(l, listStart, listCars, listLanes, distSecur, flatten, \
         listStart[l]=time.time()
     return listStart, listCars, listLanes, flatten
 
+
+def computeCars(numberCars, nbLanes,numberVertices,DISPSURF):
+    occupied=[]
+    speeds=[]
+    cars=[]
+    for i in range(nbLanes):
+        occupied.append([])
+    for i in range(numberCars):
+        carImg = pygame.image.load('spacestation.png').convert_alpha()
+        lane=random.randint(0,2)
+        x=random.randint(0,numberVertices)
+        while(x in occupied[lane]):
+            x=random.randint(0,numberVertices)
+        occupied[lane].append(x)
+        car=Car(x,0,lane,carImg,DISPSURF)
+        cars.append(car)
+        speeds.append(random.randint(100, 250))
+
+    listCars=CarPool(cars, speeds)
+    return listCars
+
 def prepareMap(numberVertices, DISPSURF, distSecur):
     """ Build the map
         numberVertices : Number of vertices
@@ -461,34 +493,14 @@ def prepareMap(numberVertices, DISPSURF, distSecur):
         distSecur : Security Distance"""
 
     # Load cars
-    carImg1 = pygame.image.load('spacestation.png').convert_alpha()
-    car1=Car(20,0,1,carImg1,DISPSURF)
-    carImg2 = pygame.image.load('spacestation.png').convert_alpha()
-    car2=Car(0,0,0,carImg2,DISPSURF)
-    carImg3 = pygame.image.load('spacestation.png').convert_alpha()
-    car3=Car(9,0,0,carImg3,DISPSURF)
-    carImg4 = pygame.image.load('spacestation.png').convert_alpha()
-    car4=Car(30,0,0,carImg4,DISPSURF)
-    carImg5 = pygame.image.load('spacestation.png').convert_alpha()
-    car5=Car(20,0,1,carImg2,DISPSURF)
-    carImg6 = pygame.image.load('spacestation.png').convert_alpha()
-    car6=Car(10,0,1,carImg2,DISPSURF)
-    carImg7 = pygame.image.load('spacestation.png').convert_alpha()
-    car7=Car(23,0,1,carImg2,DISPSURF)
-    carImg8 = pygame.image.load('spacestation.png').convert_alpha()
-    car8=Car(13,0,1,carImg2,DISPSURF)
-
-    clock = pygame.time.Clock()
-
-    listCars = CarPool([car1, car2, car3, car4, car5, car6, car7, car8],\
-                        [200, 100, 150, 50, 300, 280, 140, 160])
+    listCars = computeCars(24, 3,numberVertices, DISPSURF)
     listLanes=[]
     # Load lanes
     lane0 = Lane(0, 350, numberVertices)
     lane0.path()
-    lane1 = Lane(0, 330, numberVertices)
+    lane1 = Lane(0, 335, numberVertices)
     lane1.path()
-    lane2 = Lane(0, 310, numberVertices)
+    lane2 = Lane(0, 330, numberVertices)
     lane2.path()
 
 
